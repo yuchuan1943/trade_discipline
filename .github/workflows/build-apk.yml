@@ -1,0 +1,54 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build universal APK (release)
+        run: flutter build apk --release
+
+      - name: Build split APKs (release, per ABI)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Upload universal APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: trade-discipline-universal
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Upload split APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: trade-discipline-split-per-abi
+          path: build/app/outputs/flutter-apk/app-*-release.apk
+          if-no-files-found: error
